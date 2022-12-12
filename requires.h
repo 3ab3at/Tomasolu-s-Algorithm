@@ -3,7 +3,7 @@
 #include "Instruction.cpp"
 
 int MEM[MEMORY_SIZE];
-int REGS[REG_NUM];
+short REGS[REG_NUM];
 map<int, string> REGS_WAITING;
 
 ReservationStation load_stations[LOAD_STATIONS_NUM];
@@ -16,4 +16,4 @@ ReservationStation nor_stations[NOR_STATIONS_NUM];
 ReservationStation mult_stations[MULT_STATIONS_NUM];
 
 vector<Instruction> instructions;
-int PC;
+int PC, cycle;
