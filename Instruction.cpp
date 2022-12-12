@@ -22,11 +22,13 @@ public:
 Instruction::Instruction () {
     inst = "";
     started_execution_time = -1;
+    written_time = -1;
 };
 
 Instruction::Instruction (string instruction) {
     inst = instruction;
     started_execution_time = -1;
+    written_time = -1;
     istringstream ss(inst);
     ss >> op;
     string token;
