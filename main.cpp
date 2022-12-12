@@ -5,12 +5,22 @@ void issue(void);
 vector<int> execute(void);
 void write_back(void);
 void init(void);
+void init_mem(void);
 
 int main() {
     // HANDLE THE INPUT
-    init();
-    load_instructions();
-    issue();
+    // init();
+    // load_instructions();
+    // issue();
+    init_mem();
+
+    cout << MEM[0] << endl;
+    cout << MEM[5] << endl;
+    cout << MEM[6] << endl;
+    cout << MEM[100] << endl;
+    cout << MEM[23] << endl;
+
+
 
 }
 
@@ -19,6 +29,23 @@ void init() {
     PC = 0;
     cycle = 0;
 }
+
+void init_mem()
+{
+    fstream inst_test("mem.txt");
+    string line;
+    int index;
+    int value;
+    while(getline(inst_test, line))
+    {
+        stringstream ss (line);
+        ss >> index;
+        ss >> value;
+        MEM[index] = value;
+    }
+}
+
+
 void load_instructions() {
     fstream inst_test("./tests/test1.txt");
     string line;
