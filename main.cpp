@@ -374,6 +374,59 @@ void execute(deque<int> &wr)
             }
         }
     }
+
+    if (beq_stations[0].busy)
+    {
+        if (instructions[beq_stations[0].index].issued_time != cycle)
+        {
+            if (instructions[beq_stations[0].index].started_execution_time == -1)
+            {
+                if ((beq_stations[0].w1 == "") && (beq_stations[0].w2 == ""))
+                {
+                    instructions[beq_stations[0].index].started_execution_time = instructions[beq_stations[0].index].final_execution_time = cycle;
+                    int i = beq_stations[0].index;
+                    while (i < (PC << 2))
+                    {
+                        if (mult_stations[0].index == i) mult_stations[0].busy = false;
+                        else if (nor_stations[0].index == i) nor_stations[0].busy = false;
+                        else if (neg_stations[0].index == i) neg_stations[0].busy = false;
+                        else if (jal_ret_stations[0].index == i) jal_ret_stations[0].busy = false;
+                        else 
+                        {
+                            for (int j = 0; j < LOAD_STATIONS_NUM; j++)
+                            {
+                                if (load_stations[i].index == i) 
+                                {
+                                    load_stations[i].busy = false;
+                                    break;
+                                }
+                            }
+
+                            for (int j = 0; j < STORE_STATIONS_NUM; j++)
+                            {
+                                if (store_stations[i].index == i) 
+                                {
+                                    store_stations[i].busy = false;
+                                    break;
+                                }
+                            }
+
+                            for (int j = 0; j < ADD_ADDI_STATIONS_NUM; j++)
+                            {
+                                if (add_addi_stations[i].index == i) 
+                                {
+                                    add_addi_stations[i].busy = false;
+                                    break;
+                                }
+                            }
+                        }
+                    } 
+
+                    PC = instructions[beq_stations[0].index].imm * 4;          
+                }
+            }
+        }
+    }
 }
 
 void write_back(deque<int> &executed_instructions) {
