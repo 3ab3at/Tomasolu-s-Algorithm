@@ -1,131 +1,193 @@
 #include "requires.h"
 
-void load_instructions(void);
+void load_instructions(string);
 void issue(void);
-vector<int> execute(void);
-void write_back(void);
+void execute(deque<int>&);
+void write_back(deque<int>&);
 void init(void);
-void init_mem(void);
+void load_data(string);
 
 int main() {
-    // HANDLE THE INPUT
-    // init();
-    // load_instructions();
-    // issue();
-    init_mem();
-
-    cout << MEM[0] << endl;
-    cout << MEM[5] << endl;
-    cout << MEM[6] << endl;
-    cout << MEM[100] << endl;
-    cout << MEM[23] << endl;
-
-
-
+    string inst_path = "/home/abdelaaty/Desktop/Tomasolu-s-Algorithm/tests/test1.txt";
+    string data_path = "/home/abdelaaty/Desktop/Tomasolu-s-Algorithm/tests/mem.txt";
+    // cout << "Enter the path of the instruction file: "; cin >> inst_path;
+    // cout << "Enter the path of the data memory file:"; cin >> data_path;
+    load_instructions(inst_path);
+    load_data(data_path);
+    init();
+    // cout << instructions.size();
+    // cout << instructions[6].written_time;
+    deque<int> exec_inst;
+    while (instructions.back().written_time == -1 && cycle < 100) {
+        // cout <<  "Cycle " << cycle << ":\n";
+        issue();
+        // cout << load_stations[0].index << " " <<load_stations[0].busy << "\n";
+        // cout << PC << "\n";
+        execute(exec_inst);
+        write_back(exec_inst);
+        // cout << instructions[0].started_execution_time << " " << instructions[0].final_execution_time << "\n";
+        cycle++;
+        // cout << "Executed inst: ";
+        // for (auto u : exec_inst) cout << u << " ";
+        // cout << "\n";
+    }
+    // cout << REGS[1];
+    for (auto u : instructions) cout << u.issued_time << " " << u.started_execution_time << " " <<u.final_execution_time << "\n";
 }
 
 void init() {
     for (int i = 0; i < REG_NUM; i++) REGS_WAITING[i] = "";
     PC = 0;
-    cycle = 0;
+    cycle = 1;
+    REGS[0] = 0;
+    for (auto u : load_stations) u.busy = false;
+    for (auto u : store_stations) u.busy = false;
+    for (auto u : beq_stations) u.busy = false;
+    for (auto u : jal_ret_stations) u.busy = false;
+    for (auto u : add_addi_stations) u.busy = false;
+    for (auto u : neg_stations) u.busy = false; 
+    for (auto u : nor_stations) u.busy = false;
+    for (auto u : mult_stations) u.busy = false;
 }
 
-void init_mem()
-{
-    fstream inst_test("mem.txt");
+void load_data(string path) {
+    fstream inst_test(path);
+    if (inst_test.fail()) cout << "Failed to open data memory file.\n";
     string line;
     int index;
     int value;
-    while(getline(inst_test, line))
-    {
-        stringstream ss (line);
+    while(getline(inst_test, line)) {
+        stringstream ss(line);
         ss >> index;
         ss >> value;
         MEM[index] = value;
     }
 }
 
-
-void load_instructions() {
-    fstream inst_test("./tests/test1.txt");
+void load_instructions(string path) {
+    fstream inst_test(path);
+    if (inst_test.fail()) cout << "Faile to open data memory file.\n";
     string line;
     while(getline(inst_test, line)) instructions.push_back(Instruction(line));
-    reverse(instructions.begin(), instructions.end());
 }
 
 void issue() {
-    Instruction* cur_inst = &instructions[PC];
+    Instruction* cur_inst = &instructions[PC >> 2];
+    if (PC > (int)instructions.size() * 4 - 4) return;
     if (cur_inst->op == "LOAD") {
-        if (load_stations[0].busy && load_stations[1].busy) return;
-        cur_inst->issued_time = cycle;
-        ReservationStation* free_station = (load_stations[0].busy ? &load_stations[0] : &load_stations[1]);  
-        free_station->A = cur_inst->imm;
-        free_station->index = PC;
-        if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
-        else free_station->r1 = cur_inst->rs1;
+        ReservationStation* free_station = NULL;
+        for (int i = 0; i < STORE_STATIONS_NUM; i++) if(store_stations[i].busy) continue; else free_station = &store_stations[i];
+        if (free_station != NULL) {
+            free_station->w2 = "";
+            cur_inst->issued_time = cycle;
+            free_station->A = cur_inst->imm;
+            free_station->index = PC >> 2;
+            free_station->busy = true;
+            if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
+            else free_station->r1 = cur_inst->rs1, free_station->w1 = "";
+        }
     }
     else if (cur_inst->op == "STORE") {
-        if (store_stations[0].busy && store_stations[1].busy) return;
-        cur_inst->issued_time = cycle;
-        ReservationStation* free_station = (store_stations[0].busy ? &store_stations[0] : &store_stations[1]);  
-        free_station->A = cur_inst->imm;
-        free_station->index = PC;
-        if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
-        else free_station->r1 = cur_inst->rs1;
-        if(REGS_WAITING[cur_inst->rs2] != "") free_station->w2 = REGS_WAITING[cur_inst->rs2];
-        else free_station->r2 = cur_inst->rs2;
+        ReservationStation* free_station = NULL;
+        for (int i = 0; i < STORE_STATIONS_NUM; i++) if(store_stations[i].busy) continue; else free_station = &store_stations[i];
+        if (free_station != NULL) {
+            cur_inst->issued_time = cycle;
+            free_station->A = cur_inst->imm;
+            free_station->index = PC >> 2;
+            free_station->busy = true;
+            if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
+            else free_station->r1 = cur_inst->rs1, free_station->w1 = "";
+            if(REGS_WAITING[cur_inst->rs2] != "") free_station->w2 = REGS_WAITING[cur_inst->rs2];
+            else free_station->r2 = cur_inst->rs2, free_station->w2 = "";
+        }
     }
     else if (cur_inst->op == "BEQ") {
-        if (beq_stations[0].busy) return;
-        cur_inst->issued_time = cycle;
-        ReservationStation* free_station = &beq_stations[0];
-        free_station->A = cur_inst->imm;
-        free_station->index = PC;   
-        if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
-        else free_station->r1 = cur_inst->rs1;
-        if(REGS_WAITING[cur_inst->rs2] != "") free_station->w2 = REGS_WAITING[cur_inst->rs2];
-        else free_station->r2 = cur_inst->rs2;
+        if (!beq_stations[0].busy) {
+            cur_inst->issued_time = cycle;
+            ReservationStation* free_station = &beq_stations[0];
+            free_station->A = cur_inst->imm;
+            free_station->index = PC >> 2; 
+            free_station->busy = true;  
+            if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
+            else free_station->r1 = cur_inst->rs1, free_station->w1 = "";
+            if(REGS_WAITING[cur_inst->rs2] != "") free_station->w2 = REGS_WAITING[cur_inst->rs2];
+            else free_station->r2 = cur_inst->rs2, free_station->w2 = "";
+        }
     }
     else if (cur_inst->op == "JAL" || cur_inst->op == "RET") {
-        if (jal_ret_stations[0].busy) return;
-        cur_inst->issued_time = cycle;
-        ReservationStation* free_station = &jal_ret_stations[0];
-        free_station->index = PC;         
+        if (!jal_ret_stations[0].busy) {
+            cur_inst->issued_time = cycle;
+            ReservationStation* free_station = &jal_ret_stations[0];
+            free_station->index = PC >> 2;   
+            free_station->busy = true;    
+        }  
     }
     else if (cur_inst->op == "NEG") {
-        if (neg_stations[0].busy) return;
-        cur_inst->issued_time = cycle;
-        ReservationStation* free_station = &neg_stations[0];
-        free_station->index = PC;
-        if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
-        else free_station->r1 = cur_inst->rs1;
+        if (!neg_stations[0].busy) {
+            ReservationStation* free_station = &neg_stations[0];
+            free_station->w2 = "";
+            cur_inst->issued_time = cycle;
+            free_station->index = PC >> 2;
+            free_station->busy = true;
+            if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
+            else free_station->r1 = cur_inst->rs1, free_station->w1 = "";
+        }
     }
     else if (cur_inst->op == "NOR") {
-        if (nor_stations[0].busy) return;
-        cur_inst->issued_time = cycle;
-        ReservationStation* free_station = &nor_stations[0];
-        free_station->index = PC;
-        if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
-        else free_station->r1 = cur_inst->rs1;
-        if(REGS_WAITING[cur_inst->rs2] != "") free_station->w2 = REGS_WAITING[cur_inst->rs2];
-        else free_station->r2 = cur_inst->rs2;
+        if (!nor_stations[0].busy) {
+            cur_inst->issued_time = cycle;
+            ReservationStation* free_station = &nor_stations[0];
+            free_station->index = PC >> 2;
+            free_station->busy = true;
+            if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
+            else free_station->r1 = cur_inst->rs1, free_station->w1 = "";
+            if(REGS_WAITING[cur_inst->rs2] != "") free_station->w2 = REGS_WAITING[cur_inst->rs2];
+            else free_station->r2 = cur_inst->rs2, free_station->w2 = "";
+        }
     }
     else if (cur_inst->op == "MUL") {
-        if (mult_stations[0].busy) return;
-        cur_inst->issued_time = cycle;
-        ReservationStation* free_station = &mult_stations[0];
-        free_station->index = PC;
-        if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
-        else free_station->r1 = cur_inst->rs1;
-        if(REGS_WAITING[cur_inst->rs2] != "") free_station->w2 = REGS_WAITING[cur_inst->rs2];
-        else free_station->r2 = cur_inst->rs2;
+        if (!mult_stations[0].busy) {
+            cur_inst->issued_time = cycle;
+            ReservationStation* free_station = &mult_stations[0];
+            free_station->index = PC >> 2;
+            free_station->busy = true;
+            if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
+            else free_station->r1 = cur_inst->rs1, free_station->w1 = "";
+            if(REGS_WAITING[cur_inst->rs2] != "") free_station->w2 = REGS_WAITING[cur_inst->rs2];
+            else free_station->r2 = cur_inst->rs2, free_station->w2 = "";
+        }
+    }
+    else if (cur_inst->op == "ADD") {
+        ReservationStation* free_station = NULL;
+        for (int i = 0; i < ADD_ADDI_STATIONS_NUM; i++) if(add_addi_stations[i].busy) continue; else free_station = &add_addi_stations[i];
+        if (free_station != NULL) {
+            cur_inst->issued_time = cycle;
+            free_station->index = PC >> 2;
+            free_station->busy = true;
+            if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
+            else free_station->r1 = cur_inst->rs1, free_station->w1 = "";
+            if(REGS_WAITING[cur_inst->rs2] != "") free_station->w2 = REGS_WAITING[cur_inst->rs2];
+            else free_station->r2 = cur_inst->rs2, free_station->w2 = "";
+        }
+    }
+    else if (cur_inst->op == "ADDI") {
+        ReservationStation* free_station = NULL;
+        for (int i = 0; i < ADD_ADDI_STATIONS_NUM; i++) if(add_addi_stations[i].busy) continue; else free_station = &add_addi_stations[i];
+        if (free_station != NULL) {
+            free_station->w2 = "";
+            cur_inst->issued_time = cycle;
+            free_station->index = PC >> 2;
+            free_station->busy = true;
+            free_station->A = cur_inst->imm;
+            if(REGS_WAITING[cur_inst->rs1] != "") free_station->w1 = REGS_WAITING[cur_inst->rs1];
+            else free_station->r1 = cur_inst->rs1, free_station->w1 = "";
+        }
     }
     PC += 4;
 }
 
-vector<int> execute() 
+void execute(deque<int> &wr) 
 {
-    vector <int> wr;
     // ReservationStation beq_stations[BEQ_STATIONS_NUM];
     // ReservationStation jal_ret_stations[JAL_RET_STATIONS_NUM];  
     for (int i = 0; i < LOAD_STATIONS_NUM; i++)
@@ -169,12 +231,16 @@ vector<int> execute()
     {
         if (store_stations[i].busy)
         {
+            cout << "HERE0\n";
             if (instructions[store_stations[i].index].issued_time != cycle)
             {
+                cout << "HERE1\n";
                 if (instructions[store_stations[i].index].started_execution_time == -1)
                 {
+                    cout << "HERE2\n";
                     if (store_stations[i].w1 == "" && store_stations[i].w2 == "")
                     {
+                        cout << "HERE3\n";
                         instructions[store_stations[i].index].started_execution_time = instructions[store_stations[i].index].final_execution_time = cycle;
                         store_stations[i].A = instructions[store_stations[i].index].imm + REGS[instructions[store_stations[i].index].rs1];
                     }
@@ -246,17 +312,19 @@ vector<int> execute()
                 if (neg_stations[0].w1 == "")
                 {
                     instructions[neg_stations[0].index].started_execution_time = instructions[neg_stations[0].index].final_execution_time = cycle;
-                }
-            }
-            else
-            {
-                instructions[neg_stations[0].index].final_execution_time++;
-                if (((instructions[neg_stations[0].index].final_execution_time - instructions[neg_stations[0].index].started_execution_time) + 1) == 1)
-                {
                     wr.push_back(neg_stations[0].index);
-                    neg_stations[0].busy = 0;
+                    neg_stations[0].busy = 0;                    
                 }
             }
+            // else
+            // {
+            //     instructions[neg_stations[0].index].final_execution_time++;
+            //     if (((instructions[neg_stations[0].index].final_execution_time - instructions[neg_stations[0].index].started_execution_time) + 1) == 1)
+            //     {
+            //         wr.push_back(neg_stations[0].index);
+            //         neg_stations[0].busy = 0;
+            //     }
+            // }
         }
     }
 
@@ -269,17 +337,18 @@ vector<int> execute()
                 if ((nor_stations[0].w1 == "") && (nor_stations[0].w2 == ""))
                 {
                     instructions[nor_stations[0].index].started_execution_time = instructions[nor_stations[0].index].final_execution_time = cycle;
-                }
-            }
-            else
-            {
-                instructions[nor_stations[0].index].final_execution_time++;
-                if (((instructions[nor_stations[0].index].final_execution_time - instructions[nor_stations[0].index].started_execution_time) + 1) == 1)
-                {
                     wr.push_back(nor_stations[0].index);
                     nor_stations[0].busy = 0;
                 }
             }
+            // else
+            // {
+            //     instructions[nor_stations[0].index].final_execution_time++;
+            //     if (((instructions[nor_stations[0].index].final_execution_time - instructions[nor_stations[0].index].started_execution_time) + 1) == 1)
+            //     {
+
+            //     }
+            // }
         }
     }
 
@@ -297,7 +366,7 @@ vector<int> execute()
             else
             {
                 instructions[mult_stations[0].index].final_execution_time++;
-                if (((instructions[mult_stations[0].index].final_execution_time - instructions[mult_stations[0].index].started_execution_time) + 1) == 1)
+                if (((instructions[mult_stations[0].index].final_execution_time - instructions[mult_stations[0].index].started_execution_time) + 1) == 8)
                 {
                     wr.push_back(mult_stations[0].index);
                     mult_stations[0].busy = 0;
@@ -305,13 +374,20 @@ vector<int> execute()
             }
         }
     }
-
-
-    return wr;
 }
 
-void write_back(vector<int> executed_instructions) {
+void write_back(deque<int> &executed_instructions) {
+    deque<int> new_exec_inst;
     for (auto u : executed_instructions) {
+        // cout << "LOOK: " << instructions[u].final_execution_time << " ";
+        if (instructions[u].final_execution_time == cycle) {
+            new_exec_inst.push_back(u);
+            executed_instructions.pop_front();
+            // cout << "LOOK2: " << u << " " << new_exec_inst[0] << "\n";
+            executed_instructions = new_exec_inst;
+            continue;
+        }
+        executed_instructions.pop_front();
         instructions[u].written_time = cycle;
         Instruction cur_inst = instructions[u];
         if (cur_inst.op == "LOAD") REGS[cur_inst.rd] = MEM[cur_inst.rs1 + cur_inst.imm];
@@ -322,5 +398,6 @@ void write_back(vector<int> executed_instructions) {
         else if (cur_inst.op == "NEG") REGS[cur_inst.rd] = ~REGS[cur_inst.rs1] + 1;
         else if (cur_inst.op == "NOR") REGS[cur_inst.rd] = ~(REGS[cur_inst.rs1] | REGS[cur_inst.rs2]);
         else if (cur_inst.op == "MUL") REGS[cur_inst.rd] = REGS[cur_inst.rs1] * REGS[cur_inst.rs2];
+        executed_instructions = new_exec_inst;
     }
 }

@@ -6,7 +6,7 @@ class Instruction {
 public:
     uint rd, rs1, rs2;
     int imm;
-    uint issued_time, started_execution_time, final_execution_time, written_time, total_execution_time;
+    int issued_time, started_execution_time, final_execution_time, written_time, total_execution_time;
     string op, inst;
     
 public:
