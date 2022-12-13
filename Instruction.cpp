@@ -7,7 +7,7 @@ public:
     unsigned int rd, rs1, rs2;
     int imm;
     int issued_time, started_execution_time, final_execution_time, written_time, total_execution_time;
-    string op, inst;
+    string op, inst, address, label;
     
 public:
 
@@ -21,6 +21,8 @@ public:
 
 Instruction::Instruction () {
     inst = "";
+    label = "";
+    address = "";
     started_execution_time = -1;
     final_execution_time = -1;
     issued_time = -1;
@@ -34,8 +36,21 @@ Instruction::Instruction (string instruction) {
     final_execution_time = -1;
     issued_time = -1;
     istringstream ss(inst);
-    ss >> op;
-    string token;
+    // ss >> op;
+    string token = "";
+
+    getline(ss, token, ':');
+    if (token != inst)
+    {
+        label = token;
+        ss >> op;
+    }
+    else
+    {
+        ss >> op;
+        label = "";
+    }
+    token = "";
     if (op == "LOAD") {
         getline(ss, token, ',');
         rd = token[2] - '0';
@@ -73,7 +88,7 @@ Instruction::Instruction (string instruction) {
         rs2 = 0;       
     }
     else if (op == "JAL") {
-        // HANDLE THE JAL OPERAION
+        ss >> address;
     }
     else if (op == "RET") {
         rd = 1;

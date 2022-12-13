@@ -16,41 +16,42 @@ int main() {
     load_instructions(inst_path);
     load_data(data_path);
     init();
-    // cout << instructions.size();
-    // cout << instructions[6].written_time;
-    deque<int> exec_inst;
-    while (instructions.back().written_time == -1) {
-        // cout <<  "Cycle " << cycle << ":\n";
+    // // cout << instructions.size();
+    // // cout << instructions[6].written_time;
+    // deque<int> exec_inst;
+    // while (instructions.back().written_time == -1) {
+    //     // cout <<  "Cycle " << cycle << ":\n";
         
-        issue();
-      //  cout << "issue done \n";
-        // cout << load_stations[0].index << " " <<load_stations[0].busy << "\n";
-        // cout << PC << "\n";
-        execute(exec_inst);
-        // if (term) break;
-        //cout << "exec done \n";
-        write_back(exec_inst);
-        //cout << "wb done \n";
+    //     issue();
+    //   //  cout << "issue done \n";
+    //     // cout << load_stations[0].index << " " <<load_stations[0].busy << "\n";
+    //     // cout << PC << "\n";
+    //     execute(exec_inst);
+    //     // if (term) break;
+    //     //cout << "exec done \n";
+    //     write_back(exec_inst);
+    //     //cout << "wb done \n";
 
-        // cout << instructions[0].started_execution_time << " " << instructions[0].final_execution_time << "\n";
-        cycle++;
-        // cout << "Executed inst: ";
-        // for (auto u : exec_inst) cout << u << " ";
-        // cout << "\n";
-    }
+    //     // cout << instructions[0].started_execution_time << " " << instructions[0].final_execution_time << "\n";
+    //     cycle++;
+    //     // cout << "Executed inst: ";
+    //     // for (auto u : exec_inst) cout << u << " ";
+    //     // cout << "\n";
+    // }
     // cout << REGS[1];
     // cout << "Size: " << instructions.size();
-    for (auto u : instructions) cout << u.op << " " << u.issued_time << " " << u.started_execution_time << " " <<u.final_execution_time << " " << u.written_time << "\n";
-
+    // for (auto u : instructions) cout << u.op << " " << u.issued_time << " " << u.started_execution_time << " " <<u.final_execution_time << " " << u.written_time << "\n";
+    for (auto u : instructions) cout << u.label << " " << u.op << "\n";
     return 0;
 }
 
 void init() {
     for (int i = 0; i < REG_NUM; i++) REGS_WAITING[i] = "";
     PC = 0;
-    term = false;
+    // term = false;
     last_issued = -1;
     cycle = 1;
+    // last = NULL;
     REGS[0] = 0;
     for (auto u : load_stations) u.busy = false;
     for (auto u : store_stations) u.busy = false;
@@ -86,8 +87,12 @@ void load_instructions(string path) {
 void issue() {
     // cout << PC;
     Instruction* cur_inst = &instructions[PC >> 2];
-    if (PC > (int)instructions.size() * 4) return;
-    last_issued = PC >> 2;
+    if (PC > (int)instructions.size() * 4) 
+    {
+        // last = &instructions[last_issued];
+        return;
+    } 
+    // last_issued = PC >> 2;
     // cout <<  cur_inst->op << endl;
     if (cur_inst->op == "LOAD") {
         ReservationStation* free_station = NULL;
@@ -447,14 +452,15 @@ void execute(deque<int> &wr)
 
                         PC = PC + instructions[beq_stations[0].index].imm * 4 - 4;  
                         if (PC > ((instructions.size()-1)*4));
-                            term = true;          
+                           // term = true;  
+                           last_issued = beq_stations[0].index;
 
                     }
                 }
             }
         }
     }
-        if (jal_ret_stations[0].busy)
+    if (jal_ret_stations[0].busy)
     {
         if (instructions[jal_ret_stations[0].index].issued_time != cycle)
         {
