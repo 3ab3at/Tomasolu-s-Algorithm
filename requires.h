@@ -5,6 +5,7 @@
 int MEM[MEMORY_SIZE];
 short REGS[REG_NUM];
 map<int, string> REGS_WAITING;
+map<string, int> address_to_index;
 // bool term;
 int last_issued;
 // Instruction* last;

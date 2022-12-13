@@ -42,6 +42,7 @@ int main() {
     // cout << "Size: " << instructions.size();
     // for (auto u : instructions) cout << u.op << " " << u.issued_time << " " << u.started_execution_time << " " <<u.final_execution_time << " " << u.written_time << "\n";
     for (auto u : instructions) cout << u.label << " " << u.op << "\n";
+    // for (auto u : address_to_index) cout << u.first << " " << u.second << "\n";
     return 0;
 }
 
@@ -82,6 +83,8 @@ void load_instructions(string path) {
     if (inst_test.fail()) cout << "Failed to open data memory file.\n";
     string line;
     while(getline(inst_test, line)) instructions.push_back(Instruction(line));
+    int index = 0;
+    for ( auto u : instructions) address_to_index[u.label] = index++;
 }
 
 void issue() {
@@ -467,45 +470,60 @@ void execute(deque<int> &wr)
             if (instructions[jal_ret_stations[0].index].started_execution_time == -1)
             {
                 instructions[jal_ret_stations[0].index].started_execution_time = instructions[jal_ret_stations[0].index].final_execution_time = cycle;
-                int i = jal_ret_stations[0].index;
-                while (i < (PC << 2))
+                int i = jal_ret_stations[0].index + 1;
+                if (mult_stations[0].busy && mult_stations[0].index == i) 
                 {
-                    if (mult_stations[0].index == i) mult_stations[0].busy = false;
-                    else if (nor_stations[0].index == i) nor_stations[0].busy = false;
-                    else if (neg_stations[0].index == i) neg_stations[0].busy = false;
-                    else if (jal_ret_stations[0].index == i) jal_ret_stations[0].busy = false;
-                    else 
+                    mult_stations[0].busy = false;
+                    instructions[i].issued_time = -1;
+                }
+                else if (nor_stations[0].busy && nor_stations[0].index == i)
+                {
+                    nor_stations[0].busy = false;
+                    instructions[i].issued_time = -1;
+                } 
+                else if (neg_stations[0].busy && neg_stations[0].index == i)
+                {
+                    neg_stations[0].busy = false;
+                    instructions[i].issued_time = -1;
+                } 
+                else if (beq_stations[0].busy && beq_stations[0].index == i) 
+                {
+                    beq_stations[0].busy = false;
+                    instructions[i].issued_time = -1;
+                }
+                else 
+                {
+                    for (int j = 0; j < LOAD_STATIONS_NUM; j++)
                     {
-                        for (int j = 0; j < LOAD_STATIONS_NUM; j++)
+                        if (load_stations[j].busy && load_stations[i].index == i) 
                         {
-                            if (load_stations[i].index == i) 
-                            {
-                                load_stations[i].busy = false;
-                                break;
-                            }
-                        }
-
-                        for (int j = 0; j < STORE_STATIONS_NUM; j++)
-                        {
-                            if (store_stations[i].index == i) 
-                            {
-                                store_stations[i].busy = false;
-                                break;
-                            }
-                        }
-
-                        for (int j = 0; j < ADD_ADDI_STATIONS_NUM; j++)
-                        {
-                            if (add_addi_stations[i].index == i) 
-                            {
-                                add_addi_stations[i].busy = false;
-                                break;
-                            }
+                            load_stations[j].busy = false;
+                            instructions[j].issued_time = -1;
+                            break;
                         }
                     }
-                    i++;
-                } 
-                PC = PC + instructions[jal_ret_stations[0].index].imm * 4;      
+
+                    for (int j = 0; j < STORE_STATIONS_NUM; j++)
+                    {
+                        if (store_stations[j].busy && store_stations[j].index == i) 
+                        {
+                            store_stations[j].busy = false;
+                            instructions[j].issued_time = -1;
+                            break;
+                        }
+                    }
+
+                    for (int j = 0; j < ADD_ADDI_STATIONS_NUM; j++)
+                    {
+                        if (add_addi_stations[j].busy && add_addi_stations[j].index == i) 
+                        {
+                            add_addi_stations[j].busy = false;
+                            instructions[j].issued_time = -1;
+                            break;
+                        }
+                    }
+                }
+                PC = address_to_index[instructions[jal_ret_stations[0].index].address];      
             }
         }
     }

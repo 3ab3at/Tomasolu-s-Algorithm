@@ -43,14 +43,22 @@ Instruction::Instruction (string instruction) {
     if (token != inst)
     {
         label = token;
+        getline(ss, token, ' ');
+        // getline(ss, token, ' ');
+        // cout << "NEXT " << token << "\n";
         ss >> op;
     }
     else
     {
+        // istringstream sss(inst);
+        ss.seekg(0);
+        // getline(ss, token, ' ');
+        // cout << "NEXT 2 " << token << "\n";
         ss >> op;
         label = "";
     }
     token = "";
+    // cout << "OP IS: " << op << "\n";
     if (op == "LOAD") {
         getline(ss, token, ',');
         rd = token[2] - '0';

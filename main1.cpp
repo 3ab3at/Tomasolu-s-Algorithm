@@ -6,7 +6,7 @@ using namespace std;
 int main ()
 {
     string label, op;
-    string inst = "ADD R1, R2, R3";
+    string inst = "LOAD R1, 100(R0)";
     stringstream ss(inst);
     // ss >> op;
     string token = "";
@@ -16,25 +16,38 @@ int main ()
     {
         label = token;
         ss >> op;
-        while (ss >> token)
-        {
-            cout << token << "," << endl;
-        }
-        cout << "End:\n";
+        // while (ss >> token)
+        // {
+        //     cout << token << "," << endl;
+        // }
+        // cout << "End:\n";
     }
     else
     {
-        stringstream ss(inst);
-        ss >> op;
+        stringstream ss2(inst);
+        ss2 >> op;
         label = "";
-        while (ss >> token)
-        {
-            cout << token << "," << endl;
-        }
-        cout << "Endx:\n";
+        token = "";
+        // while (ss >> token)
+        // {
+        //     cout << token << "," << endl;
+        // }
+        // cout << "Endx:\n";
+        getline(ss2, token, ',');
+        cout << token << endl;
+        int rd = token[2] - '0';
+        getline(ss2, token, '(');
+        cout << token << endl;
+        int imm = stoi(token.substr(1));
+        getline(ss2, token);
+        cout << token << endl;
+        int rs1 = token[1] - '0';
+        int rs2 = 0;
+        cout << label << " " << endl << op << " " << rd << " " << rs1 << " " << rs2 << " "  << imm <<  endl;
 
     }
 
-    cout << label << "," << endl << op << "," << endl;
+
+
     return 0;
 }
