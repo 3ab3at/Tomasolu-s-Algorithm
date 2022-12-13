@@ -36,8 +36,8 @@ int main() {
         // cout << "\n";
     }
     // cout << REGS[1];
-    cout << "Size: " << instructions.size();
-    for (auto u : instructions) cout << u.op << " " << u.issued_time << " " << u.started_execution_time << " " <<u.final_execution_time << "\n";
+    // cout << "Size: " << instructions.size();
+    // for (auto u : instructions) cout << u.op << " " << u.issued_time << " " << u.started_execution_time << " " <<u.final_execution_time << "\n";
 
     return 0;
 }
