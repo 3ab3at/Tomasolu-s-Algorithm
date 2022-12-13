@@ -5,6 +5,8 @@
 int MEM[MEMORY_SIZE];
 short REGS[REG_NUM];
 map<int, string> REGS_WAITING;
+bool term;
+int last_issued;
 
 ReservationStation load_stations[LOAD_STATIONS_NUM];
 ReservationStation store_stations[STORE_STATIONS_NUM];

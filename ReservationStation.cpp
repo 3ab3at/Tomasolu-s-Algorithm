@@ -7,7 +7,7 @@ using namespace std;
 class ReservationStation {
 public:
     bool busy;
-    uint r1, r2, A, index;
+    unsigned int r1, r2, A, index;
     string w1, w2;
     // Instruction curr;
 
